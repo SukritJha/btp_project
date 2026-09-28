@@ -5,7 +5,7 @@ range-normalisation bases, derives Markov weights from the range-normalised F1..
 F4's weight at 0.05, and saves everything to results/calibration_<system>bus.npz.
 """
 import numpy as np
-from .config import ALPHA_FIXED, DEFAULT_WEIGHTS, N_VAR, VAR_IS_INT
+from .config import ALPHA_FIXED, DEFAULT_WEIGHTS, var_is_int
 from .markov import markov_weights
 from .problem import Problem, Calibration, calibration_path, EPS
 from .utils import mround
@@ -13,13 +13,14 @@ from .utils import mround
 
 def calibrate(problem: Problem, n_samples=1000, seed=42, verbose=True, save=True) -> Calibration:
     if verbose:
-        print("=" * 45); print(f"  CALIBRATION - INDIA {problem.system_id}-bus ({n_samples} samples)"); print("=" * 45)
+        print("=" * 45); print(f"  CALIBRATION - INDIA {problem.tag} ({n_samples} samples)"); print("=" * 45)
     rng = np.random.default_rng(seed)          # fixed seed: calibration is reproducible run to run
     lb, ub = problem.lb, problem.ub
+    n_var = len(lb); is_int = var_is_int(n_var)
     vals = np.zeros((n_samples, 4))
     for i in range(n_samples):
-        x = lb + rng.random(N_VAR) * (ub - lb)
-        x[VAR_IS_INT] = mround(x[VAR_IS_INT])
+        x = lb + rng.random(n_var) * (ub - lb)
+        x[is_int] = mround(x[is_int])
         _, *vals[i] = problem.detailed(x, DEFAULT_WEIGHTS)
         if verbose and (i + 1) % 100 == 0:
             print(f"  {i + 1}/{n_samples} samples done")
@@ -50,7 +51,7 @@ def calibrate(problem: Problem, n_samples=1000, seed=42, verbose=True, save=True
                       F4_lo=lo[3], F4_hi=hi[3], w_fixed=w_fixed, n_samples=n_samples,
                       F1_vals=F1, F2_vals=F2, F3_vals=F3, F4_vals=F4)
     if save:
-        p = calibration_path(problem.results_dir, problem.system_id)
+        p = calibration_path(problem.results_dir, problem.system_id, problem.statcom)
         p.parent.mkdir(parents=True, exist_ok=True)
         cal.save(p)
         if verbose:

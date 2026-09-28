@@ -47217,5 +47217,6 @@
  },
  "NOFE_BUDGET": 20000,
  "N_RUNS": 30,
- "system": 69
+ "system": 69,
+ "statcom": false
 }
